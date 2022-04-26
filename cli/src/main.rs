@@ -82,13 +82,13 @@ async fn build_index() {
     // create the synonyms hashmap
     let mut synonyms = std::collections::HashMap::new();
     synonyms.insert(
-        String::from("sweater"),
-        vec![String::from("sweatshirt"), String::from("long-sleeve")],
+        "sweater",
+        vec!["cardigan", "long-sleeve"],
     );
-    synonyms.insert(String::from("sweat pants"), vec![String::from("joggers")]);
+    synonyms.insert("sweat pants", vec!["joggers", "gym pants"]);
     synonyms.insert(
-        String::from("t-shirt"),
-        vec![String::from("tees"), String::from("tshirt")],
+        "t-shirt",
+        vec!["tees", "tshirt"],
     );
 
     //create the settings struct
@@ -162,7 +162,7 @@ impl fmt::Display for ClothesDisplay {
         // is very similar to `println!`.
         write!(
             f,
-            "\nresult\n article: {},\n price: {},\n size: {},\n pattern: {}\n",
+            "result\n article: {},\n price: {},\n size: {},\n pattern: {}\n",
             self.article, self.cost, self.size, self.pattern
         )
     }
