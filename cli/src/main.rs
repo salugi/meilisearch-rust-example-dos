@@ -69,10 +69,11 @@ async fn build_index() {
 
     // serialize the string to clothes objects
     let clothes: Vec<Clothes> = serde_json::from_str(&content).unwrap();
+
+    //create displayed attributes
     let displayed_attributes = ["article", "cost", "size", "pattern"];
 
     // Create ranking rules
-    // Question: is this the way to do it?
     let ranking_rules = ["words", "typo", "attribute", "exactness", "cost:asc"];
 
     //create searchable attributes
@@ -123,6 +124,7 @@ async fn build_index() {
         .wait_for_completion(&CLIENT, None, None)
         .await
         .unwrap();
+    
     if result.is_failure() {
         panic!(
             "Encountered an error while sending the documents: {:?}",
