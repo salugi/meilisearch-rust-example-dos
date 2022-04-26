@@ -1,6 +1,6 @@
 use futures::executor::block_on;
 use lazy_static::lazy_static;
-use meilisearch_sdk::{client::*};
+use meilisearch_sdk::{client::*,settings::Settings};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::fs::File;
@@ -22,7 +22,6 @@ fn main() {
             let mut input_string = String::new();
             stdin()
                 .read_line(&mut input_string)
-                .ok()
                 .expect("Failed to read line");
             match input_string.trim() {
                 "quit" | "q" | "" => {
@@ -52,21 +51,16 @@ async fn search(query: &str) {
         .hits;
 
     // display the query results
-    if query_results.len() > 0 {
+    if query_results.is_empty() {
+        println!("no results...");
+    } else {
         for clothes in query_results {
             let display = clothes.result;
-            println!("{}", format!("{}", display));
+            println!("{}", format_args!("{}", display));
         }
-    } else {
-        println!("no results...")
     }
 }
 
-/*
-TODO:
-sort by price
-add filter?
-*/
 async fn build_index() {
     // reading and parsing the file
     let mut file = File::open("../assets/clothes.json").unwrap();
@@ -79,14 +73,9 @@ async fn build_index() {
 
     // Create ranking rules
     // Question: is this the way to do it?
-    let ranking_rules = [
-        "words",
-        "typo",
-        "attribute",
-        "exactness",
-        "cost:asc",
-    ];
+    let ranking_rules = ["words", "typo", "attribute", "exactness", "cost:asc"];
 
+    //create searchable attributes
     let searchable_attributes = ["seaon", "article", "size", "pattern"];
 
     // create the synonyms hashmap
@@ -101,43 +90,29 @@ async fn build_index() {
         vec![String::from("tees"), String::from("tshirt")],
     );
 
-    // set up the synonyms with the client
+    //create the settings struct
+    let settings = Settings::new()
+        .with_ranking_rules(ranking_rules)
+        .with_searchable_attributes(searchable_attributes)
+        .with_displayed_attributes(displayed_attributes)
+        .with_synonyms(synonyms);
+
+    //add the settings to the index
     let result = CLIENT
         .index("clothes")
-        .set_synonyms(&synonyms)
+        .set_settings(&settings)
         .await
         .unwrap()
         .wait_for_completion(&CLIENT, None, None)
         .await
         .unwrap();
 
-        if result.is_failure() {
-            panic!(
-                "Encountered an error while adding synonyms: {:?}",
-                result.unwrap_failure()
-            );
-        }
-
-    // set displayed attributes
-    let _ = CLIENT
-        .index("clothes")
-        .set_displayed_attributes(displayed_attributes)
-        .await
-        .unwrap();
-
-    // set the ranking rules for the index
-    let _ = CLIENT
-        .index("clothes")
-        .set_ranking_rules(&ranking_rules)
-        .await
-        .unwrap();
-
-    // set the searchable attributes
-    let _ = CLIENT
-        .index("clothes")
-        .set_searchable_attributes(&searchable_attributes)
-        .await
-        .unwrap();
+    if result.is_failure() {
+        panic!(
+            "Encountered an error while setting settings for index: {:?}",
+            result.unwrap_failure()
+        );
+    }
 
     // add the documents
     let result = CLIENT
@@ -190,4 +165,3 @@ impl fmt::Display for ClothesDisplay {
         )
     }
 }
-
